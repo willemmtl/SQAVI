@@ -9,13 +9,14 @@ Generate fake observations for every grid cell from a given grid of parameters.
 - `grid_params::Array{Float64, 3}`: Concatenated grids of values for each parameter of the GEV.
 - `nobs::Integer`: Number of fake observations to generate.
 """
-function generateData(grid_params::Array{Float64, 3}, nobs::Integer)
+function generateData(grid_params::Array{Float64, 3}, nobsMax::Integer)
 
     Y = Vector{Float64}[]
 
     for i = 1:size(grid_params, 1)
         for j = 1:size(grid_params, 2)
             gev_params = grid_params[i, j, :];
+            nobs = rand(0:nobsMax)
             y = rand(GeneralizedExtremeValue(gev_params[1], exp(gev_params[2]), gev_params[3]), nobs);
             push!(Y, y);
         end

@@ -122,7 +122,7 @@ function plotCAVIvsMCMC(
         Guide.ylabel("Density"),
     );
 
-    x = -.020:.0001:.005;
+    x = -.020:.0001:.01;
 
     marginal = caviRes.approxMarginals[M+1];
     mcmcSample = mcmcChain[:, "ξ", 1].value[warmingSize:end];
@@ -136,7 +136,7 @@ function plotCAVIvsMCMC(
         Guide.ylabel("Density"),
     );
 
-    x = .7:.001:1.5;
+    x = .5:.001:1.5;
 
     marginal = caviRes.approxMarginals[M+2];
     mcmcSample = mcmcChain[:, "κᵤ", 1].value[warmingSize:end];
