@@ -1,2 +1,2 @@
 # SLAVI
-Serial Laplace Approximation for Variational Inference
+Serial Laplace Approximations for Variational Inference
