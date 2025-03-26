@@ -16,7 +16,7 @@ function generateData(grid_params::Array{Float64, 3}, nobsMax::Integer)
     for i = 1:size(grid_params, 1)
         for j = 1:size(grid_params, 2)
             gev_params = grid_params[i, j, :];
-            nobs = rand(0:nobsMax)
+            nobs = rand(1:nobsMax)
             y = rand(GeneralizedExtremeValue(gev_params[1], exp(gev_params[2]), gev_params[3]), nobs);
             push!(Y, y);
         end

@@ -69,18 +69,20 @@ Compute the log full conditional of ξ parameter of cell cellIndex.
 
 # Arguments
 - `ξ::DenseVector`: Variable.
-- `μ::DenseVector`: Value of μ at this cell.
-- `ϕ::DenseVector`: Value of ϕ at this cell.
+- `Eμ::DenseVector`: Values of E(μ) at every cells.
+- `Eϕ::DenseVector`: Values of E(ϕ) at every cells.
+- `varϕ::DenseVector`: Value of Var(ϕ) at every cells.
 - `data::Vector{Vector{Float64}}`: Observations.
 """
 function xilogfullconditional(
     ξ::Real;
-    μ::DenseVector,
-    ϕ::DenseVector,
+    Eμ::DenseVector,
+    Eϕ::DenseVector,
+    varϕ::DenseVector,
     data::Vector{Vector{Float64}},
 )
     return (
-        sum(loglikelihood.(GeneralizedExtremeValue.(μ, exp.(ϕ), ξ), data))
+        sum(loglikelihood.(GeneralizedExtremeValue.(Eμ, exp.(Eϕ .+ varϕ ./ 2), ξ), data))
         + logpdf(Beta(6, 9), ξ + .5)
     )
 end

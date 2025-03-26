@@ -80,8 +80,9 @@ include("../src/model.jl");
         M = M₁ * M₂;
 
         ξ = 0.0
-        μ = ones(4);
-        ϕ = zeros(4);
+        Eμ = ones(4);
+        Eϕ = zeros(4);
+        varϕ = fill(2, 4);
         data = [
             [1.0, 1.0],
             [1.0, 1.0],
@@ -89,8 +90,8 @@ include("../src/model.jl");
             [1.0, 1.0],
         ];
 
-        @test xilogfullconditional(ξ, μ=μ, ϕ=ϕ, data=data) ≈ (
-            - 8 # loglike GEV
+        @test xilogfullconditional(ξ, Eμ=Eμ, Eϕ=Eϕ, varϕ=varϕ, data=data) ≈ (
+            - 16 # loglike GEV
             + loggamma(15) - loggamma(6) - loggamma(9) + 13 * log(.5) # Priori de xi
         )
     end

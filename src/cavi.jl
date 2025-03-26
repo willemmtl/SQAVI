@@ -287,13 +287,15 @@ function xilfc(ξ::Real, caviCounter::Dict, traces::Dict, spatialScheme::Dict)
 
     data = spatialScheme[:data];
 
-    μ = traces[:muMean][:, iter];
-    ϕ = traces[:phiMean][:, iter];
+    Eμ = traces[:muMean][:, iter];
+    Eϕ = traces[:phiMean][:, iter];
+    varϕ = traces[:cellVar][:, iter, 4];
 
     return xilogfullconditional(
         ξ,
-        μ=μ,
-        ϕ=ϕ,
+        Eμ=Eμ,
+        Eϕ=Eϕ,
+        varϕ=varϕ,
         data=data,
     )
 
