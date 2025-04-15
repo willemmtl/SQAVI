@@ -18,9 +18,9 @@ function plotConvergenceCriterion(MCKL::DenseVector)
         layer(x=1:n_mckl, y=MCKL, Geom.line),
         layer(x=1:n_mckl, y=MCKL, Geom.point, shape=[Shape.cross], Theme(default_color="red")),
         Theme(background_color="white"),
-        Guide.title("Convergence criterion"),
+        Guide.title("Critère de convergence"),
         Guide.xlabel("Epoch"),
-        Guide.ylabel("KL divergence"),
+        Guide.ylabel("Divergence KL"),
     )
 end
 
@@ -44,9 +44,9 @@ function plotTraceCAVI(trace::DenseVector, name::String)
         layer(x=1:n_trace, y=trace, Geom.line),
         layer(x=1:n_trace, y=trace, Geom.point, shape=[Shape.cross], Theme(default_color="red")),
         Theme(background_color="white"),
-        Guide.title("CAVI trace of $name"),
-        Guide.xlabel("Iteration"),
-        Guide.ylabel("Value"),
+        Guide.title("Trace CAVI de $name"),
+        Guide.xlabel("Itération"),
+        Guide.ylabel("Valeur"),
     )
 end
 
@@ -70,9 +70,9 @@ function plotTraceMCMC(chain::Mamba.Chains, name::String)
     plot(
         layer(x=1:n_trace, y=trace, Geom.line),
         Theme(background_color="white"),
-        Guide.title("MCMC trace of $name"),
-        Guide.xlabel("Iteration"),
-        Guide.ylabel("Value"),
+        Guide.title("Trace MCMC de $name"),
+        Guide.xlabel("Itération"),
+        Guide.ylabel("Valeur"),
     )
 end
 
@@ -92,7 +92,7 @@ function plotCAVIvsMCMC(
     warmingSize::Integer,
 )
 
-    set_default_plot_size(20cm ,31cm)
+    set_default_plot_size(20cm, 31cm)
 
     x = 5:.001:15;
 
@@ -103,9 +103,9 @@ function plotCAVIvsMCMC(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
         Theme(background_color="white"),
-        Guide.title("Approx vs MCMC for mu"),
+        Guide.title("CAVI vs MCMC pour mu"),
         Guide.xlabel("mu"),
-        Guide.ylabel("Density"),
+        Guide.ylabel("Densité"),
     );
 
     x = -2:.001:2;
@@ -117,12 +117,12 @@ function plotCAVIvsMCMC(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
         Theme(background_color="white"),
-        Guide.title("Approx vs MCMC for phi"),
+        Guide.title("CAVI vs MCMC pour phi"),
         Guide.xlabel("phi"),
-        Guide.ylabel("Density"),
+        Guide.ylabel("Densité"),
     );
 
-    x = -.020:.0001:.01;
+    x = .22:.0001:.27;
 
     marginal = caviRes.approxMarginals[M+1];
     mcmcSample = mcmcChain[:, "ξ", 1].value[warmingSize:end];
@@ -131,9 +131,9 @@ function plotCAVIvsMCMC(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
         Theme(background_color="white"),
-        Guide.title("Approx vs MCMC for xi"),
+        Guide.title("CAVI vs MCMC pour xi"),
         Guide.xlabel("xi"),
-        Guide.ylabel("Density"),
+        Guide.ylabel("Densité"),
     );
 
     x = .5:.001:1.5;
@@ -145,9 +145,9 @@ function plotCAVIvsMCMC(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
         Theme(background_color="white"),
-        Guide.title("Approx vs MCMC for kappa_u"),
+        Guide.title("CAVI vs MCMC pour kappa_u"),
         Guide.xlabel("kappa_u"),
-        Guide.ylabel("Density"),
+        Guide.ylabel("Densité"),
     );
 
     x = 6:.001:14;
@@ -159,9 +159,9 @@ function plotCAVIvsMCMC(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
         Theme(background_color="white"),
-        Guide.title("Approx vs MCMC for kappa_v"),
+        Guide.title("CAVI vs MCMC pour kappa_v"),
         Guide.xlabel("kappa_v"),
-        Guide.ylabel("Density"),
+        Guide.ylabel("Densité"),
     );
 
     vstack(p1, p2, p3, p4, p5)
