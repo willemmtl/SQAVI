@@ -1,6 +1,19 @@
-data
-trash
-JalbertGenestPerreault2022
-CasR.ipynb
+# Hidden files
 .DS_Store
+
+# Folders
+data
+casr
+climex
+trash
+results
+data_processing
+
+# File types
 *.gif
+*.csv
+
+# Notebooks
+CasR.ipynb
+climex.ipynb
+gev.ipynb
