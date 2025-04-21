@@ -8,6 +8,8 @@ climex
 trash
 results
 data_processing
+maps
+ams
 
 # File types
 *.gif

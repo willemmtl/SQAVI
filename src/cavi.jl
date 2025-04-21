@@ -10,44 +10,52 @@ end
 
 
 """
+    runCAVI(nEpochMax, epochSize, initialValues, spatialScheme, ϵ)
+
 CAVI algorithm.
 """
-function runCAVI(nEpoch::Integer, epochSize::Integer, initialValues::Dict{Symbol, Any}, spatialScheme::Dict{Symbol, Any})
+function runCAVI(
+    nEpochMax::Integer,
+    epochSize::Integer,
+    initialValues::Dict{Symbol, Any},
+    spatialScheme::Dict{Symbol, Any},
+    ϵ::Real=0.05,
+)
     
     M = spatialScheme[:M];
 
-    traces = Dict(
-        :muMean => zeros(M, nEpoch*epochSize),
-        :phiMean => zeros(M, nEpoch*epochSize),
-        :xiMean => zeros(nEpoch*epochSize),
-        :cellVar => zeros(M, nEpoch*epochSize, 4),
-        :xiVar => zeros(M),
-        :kappaUparams => zeros(2, nEpoch*epochSize),
-        :kappaVparams => zeros(2, nEpoch*epochSize),
-    )
-
     approxMarginals = Vector{Distribution}(undef, M+3);
 
-    MCKL = zeros(nEpoch);
+    MCKL = Vector{Float64}();
 
-    initialize!(traces, initialValues);
+    traces = initialize(initialValues);
 
     caviCounter = Dict(
-        :iter => 2,
+        :iter => 1,
         :epoch => 1,
         :numCell => 1,
     )
 
-    runIter!(traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
+    println("Itération 0...")
     compApproxMarginals!(approxMarginals, traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
     compMCKL!(MCKL, approxMarginals, caviCounter=caviCounter, spatialScheme=spatialScheme);
 
-    for k = 1:nEpoch
-        caviCounter[:epoch] = k;
+    while (caviCounter[:epoch] <= nEpochMax)
+        caviCounter[:epoch] += 1;
         runEpoch!(traces, MCKL, approxMarginals, caviCounter=caviCounter, epochSize=epochSize, spatialScheme=spatialScheme);
+        if (caviCounter[:epoch] >= 2)
+            if (abs(MCKL[caviCounter[:epoch]] - MCKL[caviCounter[:epoch]-1]) < ϵ)
+                println("L'algorithme a convergé !")
+                return CAVIres(
+                    MCKL,
+                    approxMarginals,
+                    traces,
+                )
+            end
+        end
     end
 
-    println("Done ! :)")
+    println("L'algorithme a atteint le nombre maximum d'itérations.")
 
     return CAVIres(
         MCKL,
@@ -58,23 +66,28 @@ end
 
 
 """
-    initialize!(traces, initialValues)
+    initialize(initialValues)
 
 Set initial values.
 
 # Arguments
-- `traces::Dict`: Traces of all variational parameters.
 - `initialValues::Dict`: Initial values to assign.
 """
-function initialize!(traces::Dict, initialValues::Dict)
+function initialize(initialValues::Dict)
 
-    traces[:muMean][:, 1] = initialValues[:μ];
-    traces[:phiMean][:, 1] = initialValues[:ϕ];
-    traces[:xiMean][1] = initialValues[:ξ];
-    traces[:kappaUparams][1, :] = fill((M - 1)/2 + 1, size(traces[:kappaUparams], 2));
-    traces[:kappaUparams][2, 1] = initialValues[:kappaUparam];
-    traces[:kappaVparams][1, :] = fill((M - 1)/2 + 1, size(traces[:kappaVparams], 2));
-    traces[:kappaVparams][2, 1] = initialValues[:kappaVparam];
+    # Identity Matrices
+    cellVar = zeros(4, M);
+    cellVar[1, :] = ones(M);
+    cellVar[4, :] = ones(M);
+
+    return Dict(
+        :muMean => reshape(initialValues[:μ], M, 1),
+        :phiMean => reshape(initialValues[:ϕ], M, 1),
+        :xiMean => [initialValues[:ξ]],
+        :cellVar => cellVar,
+        :kappaUparams => [(M - 1)/2 + 1, initialValues[:kappaUparam]],
+        :kappaVparams => [(M - 1)/2 + 1, initialValues[:kappaVparam]],
+    )
 
 end
 
@@ -94,18 +107,10 @@ Perform one epoch of the CAVI algorithm.
 """
 function runEpoch!(traces::Dict, MCKL::DenseVector, approxMarginals::Vector{<:Distribution}; caviCounter::Dict, epochSize::Integer, spatialScheme::Dict)
     
-    for j = 1:epochSize
-
-        caviCounter[:iter] = epochSize * (caviCounter[:epoch] - 1) + j;
-
-        println("Itération $(caviCounter[:iter])...")
-
-        if (caviCounter[:iter] > 2)
-            runIter!(traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
-        end
-        
+    for _ = 1:epochSize
+        runIter!(traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
     end
-
+    
     compApproxMarginals!(approxMarginals, traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
     compMCKL!(MCKL, approxMarginals, caviCounter=caviCounter, spatialScheme=spatialScheme);
 end
@@ -129,7 +134,8 @@ function compMCKL!(MCKL::DenseVector, approxMarginals::Vector{<:Distribution}; c
     data = spatialScheme[:data];
 
     logtarget(θ::DenseVector) = logposterior(θ, Fmu=Fmu, Fphi=Fphi, data=data);
-    MCKL[caviCounter[:epoch]] =  MonteCarloKL(logtarget, approxMarginals);
+    push!(MCKL, MonteCarloKL(logtarget, approxMarginals));
+
 end
 
 
@@ -155,7 +161,7 @@ function compApproxMarginals!(approxMarginals::Vector{<:Distribution}, traces::D
             traces[:muMean][i, iter],
             traces[:phiMean][i, iter],
         ];
-        cellVar = buildVar(traces[:cellVar][i, iter, :]);
+        cellVar = buildVar(traces[:cellVar][:, i, iter]);
 
         try
             approxMarginals[i] = MvNormal(m_i, round.(cellVar, digits = 12));
@@ -187,13 +193,17 @@ Perform one iteration of the CAVI algorithm.
 """
 function runIter!(traces::Dict; caviCounter::Dict, spatialScheme::Dict)
 
+    caviCounter[:iter] += 1
     iter = caviCounter[:iter];
+    M = spatialScheme[:M];
 
-    traces[:muMean][:, iter] = traces[:muMean][:, iter-1];
-    traces[:phiMean][:, iter] = traces[:phiMean][:, iter-1];
-    traces[:xiMean][iter] = traces[:xiMean][iter-1];
-    traces[:kappaUparams][2, iter] = traces[:kappaUparams][2, iter-1];
-    traces[:kappaVparams][2, iter] = traces[:kappaVparams][2, iter-1];
+    println("Itération $(iter-1)...")
+
+    traces[:muMean] = hcat(traces[:muMean], traces[:muMean][:, iter-1]);
+    traces[:phiMean] = hcat(traces[:phiMean], traces[:phiMean][:, iter-1]);
+    push!(traces[:xiMean], traces[:xiMean][iter-1]);
+    traces[:kappaVparams] = hcat(traces[:kappaVparams], [(M - 1)/2 + 1, traces[:kappaVparams][2, iter-1]]);
+    traces[:kappaUparams] = hcat(traces[:kappaUparams], [(M - 1)/2 + 1, traces[:kappaUparams][2, iter-1]]);
 
     updateParams!(traces, caviCounter, spatialScheme);
 
@@ -213,30 +223,54 @@ Perform one iteration of the CAVI algorithm.
 function updateParams!(traces::Dict, caviCounter::Dict, spatialScheme::Dict)
 
     iter = caviCounter[:iter];
+    M = spatialScheme[:M];
+    cellsVar = Matrix{Float64}(undef, (4, M))
 
-    for i = 1:spatialScheme[:M]
+    for i = 1:M
 
         caviCounter[:numCell] = i;
+        θ₀ = [
+            traces[:muMean][i, iter],
+            traces[:phiMean][i, iter],
+        ];
         
-        # Mean
-        m_i = findMode(
-            θi -> clfc(θi, caviCounter, traces, spatialScheme),
-            [
-                traces[:muMean][i, iter],
-                traces[:phiMean][i, iter],
-            ],
-        );
+        (m_i, cellVar) = compCellQuadraticApprox(θ₀, caviCounter, traces, spatialScheme);
+
         (traces[:muMean][i, iter], traces[:phiMean][i, iter]) =  m_i;
-        
-        # Var
-        cellVar = fisherVar(θi -> clfc(θi, caviCounter, traces, spatialScheme), m_i);
-        traces[:cellVar][i, iter, :] = flatten(cellVar);
+        cellsVar[:, i] = flatten(cellVar);
         
     end
 
+    traces[:cellVar] = cat(traces[:cellVar], cellsVar, dims=3);
+
     traces[:xiMean][iter] = findMode(ξ -> xilfc(ξ, caviCounter, traces, spatialScheme), traces[:xiMean][iter])[1];
-    traces[:kappaUparams][2, iter] = compKappaParam(traces[:muMean][:, iter], traces[:cellVar][:, iter, 1], spatialScheme[:Fmu]);
-    traces[:kappaVparams][2, iter] = compKappaParam(traces[:phiMean][:, iter], traces[:cellVar][:, iter, 4], spatialScheme[:Fphi]);
+    traces[:kappaUparams][2, iter] = compKappaParam(traces[:muMean][:, iter], traces[:cellVar][1, :, iter], spatialScheme[:Fmu]);
+    traces[:kappaVparams][2, iter] = compKappaParam(traces[:phiMean][:, iter], traces[:cellVar][4, :, iter], spatialScheme[:Fphi]);
+
+end
+
+
+"""
+    compCellQuadraticApprox(θ₀, caviCounter, traces, spatialScheme)
+
+Compute mean and variance of the Normal approximation of the cell's full conditional.
+
+# Arguments :
+- `θ₀::DenseVector`: Initial value to find the mode.
+- `caviCounter::Dict`: Counters of the CAVI algorithm.
+- `traces::Dict`: Traces of all variational parameters.
+- `spatialScheme::Dict`: Spatial structures and data.
+"""
+function compCellQuadraticApprox(
+    θ₀::DenseVector,
+    caviCounter::Dict,
+    traces::Dict,
+    spatialScheme::Dict,
+)
+
+    mode = findMode(θi -> clfc(θi, caviCounter, traces, spatialScheme), θ₀);
+    
+    return mode, fisherVar(θi -> clfc(θi, caviCounter, traces, spatialScheme), mode);
 
 end
 
@@ -289,7 +323,7 @@ function xilfc(ξ::Real, caviCounter::Dict, traces::Dict, spatialScheme::Dict)
 
     Eμ = traces[:muMean][:, iter];
     Eϕ = traces[:phiMean][:, iter];
-    varϕ = traces[:cellVar][:, iter, 4];
+    varϕ = traces[:cellVar][4, :, iter];
 
     return xilogfullconditional(
         ξ,
