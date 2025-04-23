@@ -1,2 +1,2 @@
-# SLAVI
-Serial Laplace Approximations for Variational Inference
+# SQAVI
+Serial Quadratic Approximations for Variational Inference
