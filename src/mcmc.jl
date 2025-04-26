@@ -84,7 +84,7 @@ end
 
 Choose whether to accept xi's candidate or not based on the Metropolis criterion.
 """
-function xi_update(ξ::Real, ξ̃::Real, μ::DenseVector, ϕ::DenseVector, Y::Vector{Vector{Float64}})
+function xi_update(ξ::Real, ξ̃::Real, μ::DenseVector, ϕ::DenseVector, Y::Vector{Vector{T}}) where T<:AbstractFloat
 
     lr = logfxi(ξ̃, μ, ϕ, Y) - logfxi(ξ, μ, ϕ, Y);
 
@@ -101,7 +101,7 @@ end
 
 Xi's log full conditional.
 """
-function logfxi(ξ::Real, μ::DenseVector, ϕ::DenseVector, Y::Vector{Vector{Float64}})
+function logfxi(ξ::Real, μ::DenseVector, ϕ::DenseVector, Y::Vector{Vector{T}}) where T<:AbstractFloat
     return sum(datalevel_loglike.(Y, μ, ϕ, ξ)) + logpdf(Beta(6, 9), ξ + .5)
 end
 

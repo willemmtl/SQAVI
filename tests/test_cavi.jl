@@ -29,7 +29,7 @@ include("ressources/cavi.jl");
     end
 
 
-    @testset "estimateKappa(variant; traces, caviCounter)" begin
+    @testset "estimateKappa(variant; traces)" begin
         
         traces = Dict(
             :kappaUparams => [0 1; 0 2],
@@ -38,7 +38,7 @@ include("ressources/cavi.jl");
             :iter => 2,
         );
 
-        @test estimateKappa("u", traces=traces, caviCounter=caviCounter) ≈ .5;
+        @test estimateKappa("u", traces=traces) ≈ .5;
     end
 
 
@@ -67,7 +67,7 @@ include("ressources/cavi.jl");
         M = spatialScheme[:M];
 
         @suppress begin
-            runIter!(traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
+            runIter!(traces, caviCounter=caviCounter, spatialScheme=spatialScheme, saveFolder="tests/results");
         end
 
         @test size(traces[:muMean]) == (M, 2);
@@ -82,7 +82,7 @@ include("ressources/cavi.jl");
     end
 
 
-    @testset "runCAVI(nEpochMax, epochSize, initialValues, spatialScheme, ϵ)" begin
+    @testset "runCAVI(nEpochMax, epochSize, initialValues, spatialScheme, ϵ; saveFolder))" begin
         
         nEpochMax = runCAVIressource[:nEpochMax];
         epochSize = runCAVIressource[:epochSize];
@@ -90,13 +90,12 @@ include("ressources/cavi.jl");
         spatialScheme = runCAVIressource[:spatialScheme];
 
         res = @suppress begin
-            runCAVI(nEpochMax, epochSize, initialValues, spatialScheme);
+            runCAVI(nEpochMax, epochSize, initialValues, spatialScheme, saveFolder="tests/results");
         end
         
-        @test length(res.MCKL) == nEpochMax * epochSize + 1;
+        @test length(res.MCKL) == nEpochMax + 1;
         @test size(res.traces[:muMean]) == (M, nEpochMax * epochSize + 1);
         @test size(res.traces[:cellVar]) == (4, M, nEpochMax * epochSize + 1);
-
 
     end
 end

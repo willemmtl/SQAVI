@@ -4,7 +4,7 @@ using Distributions:loglikelihood
 """
     logposterior(θ; Fmu, Fphi, data)
 """
-function logposterior(θ::DenseVector; Fmu::iGMRF, Fphi::iGMRF, data::Vector{Vector{Float64}})
+function logposterior(θ::DenseVector; Fmu::iGMRF, Fphi::iGMRF, data::Vector{Vector{T}}) where T<:AbstractFloat
     
     M = prod(Fmu.G.gridSize);
     μ = θ[1:M];
@@ -31,7 +31,7 @@ Log full conditional density of [μi, ϕi] knowing all other parameters.
 
 # Arguments
 - `i::Integer`: Numero of the cell.
-- `θi::Vector{Float64}`: parameters for cell i -> variables [μi, ϕi].
+- `θi::Vector{T}`: where T<:AbstractFloat parameters for cell i -> variables [μi, ϕi].
 - `ξ::Real`: Last updated shape parameter.
 - `μ̄i::Real`: Neighbors influence for location (iGMRF).
 - `ϕ̄i::Real`: Neighbors influence for log-scale (iGMRF).
@@ -39,7 +39,7 @@ Log full conditional density of [μi, ϕi] knowing all other parameters.
 - `κ̂ᵥ::Real`: κᵥ estimate.
 - `Fmu::iGMRF`: Spatial scheme for location.
 - `Fphi::iGMRF`: Spatial scheme for log-scale.
-- `data::Vector{Float64}`: Observations for every cells.
+- `data::Vector{T}`: Observations for every cells.
 """
 function celllogfullconditional(
     i::Integer,
@@ -51,8 +51,8 @@ function celllogfullconditional(
     κ̂ᵥ::Real,
     Fmu::iGMRF,
     Fphi::iGMRF,
-    data::Vector{Vector{Float64}},
-)
+    data::Vector{Vector{T}}
+) where T<:AbstractFloat
 
     return (
         loglikelihood(GeneralizedExtremeValue(θi[1], exp(θi[2]), ξ), data[i])
@@ -72,15 +72,15 @@ Compute the log full conditional of ξ parameter of cell cellIndex.
 - `Eμ::DenseVector`: Values of E(μ) at every cells.
 - `Eϕ::DenseVector`: Values of E(ϕ) at every cells.
 - `varϕ::DenseVector`: Value of Var(ϕ) at every cells.
-- `data::Vector{Vector{Float64}}`: Observations.
+- `data::Vector{Vector{T}}`: Observations.
 """
 function xilogfullconditional(
     ξ::Real;
     Eμ::DenseVector,
     Eϕ::DenseVector,
     varϕ::DenseVector,
-    data::Vector{Vector{Float64}},
-)
+    data::Vector{Vector{T}},
+) where T<:AbstractFloat
     return (
         sum(loglikelihood.(GeneralizedExtremeValue.(Eμ, exp.(Eϕ .+ varϕ ./ 2), ξ), data))
         + logpdf(Beta(6, 9), ξ + .5)

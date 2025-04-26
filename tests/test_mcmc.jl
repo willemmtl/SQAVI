@@ -1,4 +1,4 @@
-using Test, GMRF, Distributions
+using Test, GMRF, Distributions, Suppressor
 
 include("../src//mcmc.jl");
 
@@ -107,7 +107,9 @@ include("../src//mcmc.jl");
             :ξ => 1.0,
         );
 
-        chain = mcmc(datastructure, niter, initialvalues, stepsize);
+        chain = @suppress begin
+            mcmc(datastructure, niter, initialvalues, stepsize);
+        end
 
         @test length(chain.names) == 2 * M + 3;
         @test length(chain[:, "μ1", 1].value) == niter;

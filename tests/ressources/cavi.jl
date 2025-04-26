@@ -100,7 +100,7 @@ runIter!ressource = Ressource(
         :kappaVparams => [1; 2;;],
     ),
     Dict(
-        :iter => 1,
+        :iter => 0,
         :epoch => 1,
         :numCell => 1,
     ),
@@ -130,8 +130,6 @@ data = [
 M₂ = 2;
 M₁ = 2;
 M = M₁ * M₂;
-nEpochMax = 4;
-epochSize = 1;
 
 runCAVIressource = Dict(
     :nEpochMax => 4,

@@ -10,10 +10,12 @@ results
 data_processing
 maps
 ams
+outputGraphs
 
 # File types
 *.gif
 *.csv
+*.png
 
 # Notebooks
 CasR.ipynb
