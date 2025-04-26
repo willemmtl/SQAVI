@@ -88,14 +88,25 @@ include("ressources/cavi.jl");
         epochSize = runCAVIressource[:epochSize];
         initialValues = runCAVIressource[:initialValues];
         spatialScheme = runCAVIressource[:spatialScheme];
+        saveFolder = "tests/results";
 
+        # New CAVI
         res = @suppress begin
-            runCAVI(nEpochMax, epochSize, initialValues, spatialScheme, saveFolder="tests/results");
+            runCAVI(nEpochMax, epochSize, spatialScheme, initialValues=initialValues, saveFolder=saveFolder);
         end
         
         @test length(res.MCKL) == nEpochMax + 1;
         @test size(res.traces[:muMean]) == (M, nEpochMax * epochSize + 1);
         @test size(res.traces[:cellVar]) == (4, M, nEpochMax * epochSize + 1);
+
+        # CAVI from previous results
+        res = @suppress begin
+            runCAVI(nEpochMax, epochSize, spatialScheme, initialValues=saveFolder, saveFolder=saveFolder);
+        end
+
+        @test length(res.MCKL) == 2 * nEpochMax + 1;
+        @test size(res.traces[:muMean]) == (M, 2 * nEpochMax * epochSize + 1);
+        @test size(res.traces[:cellVar]) == (4, M, 2 * nEpochMax * epochSize + 1);
 
     end
 end

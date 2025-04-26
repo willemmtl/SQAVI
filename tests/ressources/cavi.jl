@@ -132,8 +132,8 @@ M₁ = 2;
 M = M₁ * M₂;
 
 runCAVIressource = Dict(
-    :nEpochMax => 4,
-    :epochSize => 1,
+    :nEpochMax => 2,
+    :epochSize => 2,
     :initialValues => Dict(
         :μ => zeros(M),
         :ϕ => zeros(M),

@@ -19,20 +19,12 @@ CAVI algorithm.
 function runCAVI(
     nEpochMax::Integer,
     epochSize::Integer,
-    initialValues::Union{Dict{Symbol, Any}, String},
     spatialScheme::Dict{Symbol, Any},
     ϵ::Real=0.05;
+    initialValues::Union{Dict{Symbol, Any}, String},
     saveFolder::String,
 )
     
-    M = spatialScheme[:M];
-
-    approxMarginals = Vector{Distribution}(undef, M+3);
-
-    MCKL = Vector{Float64}();
-
-    traces = initialize(initialValues);
-
     caviCounter = Dict(
         :iter => 0,
         :epoch => 0,
@@ -40,11 +32,9 @@ function runCAVI(
     )
 
     if isa(initialValues, Dict)
-        println("Itération 0...")
-        compApproxMarginals!(approxMarginals, traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
-        saveApproxMarginals!(approxMarginals, saveFolder);
-        compMCKL!(MCKL, approxMarginals, spatialScheme=spatialScheme);
-        saveMCKL!(MCKL, saveFolder);
+        (traces, approxMarginals, MCKL) = initialize(initialValues, caviCounter, spatialScheme, saveFolder=saveFolder);
+    elseif isa(initialValues, String)
+        (traces, approxMarginals, MCKL) = initialize(initialValues);
     end
 
     while (caviCounter[:epoch] < nEpochMax)
@@ -94,22 +84,36 @@ end
 
 
 """
-    initialize(initialValues)
+    initialize(initialValues, caviCounter, spatialScheme)
 
 Set initial values.
+Compute approxMarginals and MCKL with initialize values.
 
 # Arguments
-- `initialValues::Union{Dict, String}`: Initial values to assign.
-Can be a dict 
+- `initialValues::Dict{Symbol, Any}`: Initial values to assign.
+- `caviCounter::Dict`: Counters of the CAVI algorithm.
+- `spatialScheme::Dict`: Spatial structures and data.
+- `saveFolder::String` : Folder where to save current results.
 """
-function initialize(initialValues::Union{Dict{Symbol, Any}, String})
+function initialize(
+    initialValues::Dict{Symbol, Any},
+    caviCounter::Dict,
+    spatialScheme::Dict;
+    saveFolder::String,
+)
+
+    println("Itération 0...")
+    
+    M = spatialScheme[:M];
+    approxMarginals = Vector{Distribution}(undef, M+3);
+    MCKL = Vector{Float64}();
 
     # Identity Matrices
     cellVar = zeros(4, M);
     cellVar[1, :] = ones(M);
     cellVar[4, :] = ones(M);
 
-    return Dict(
+    traces = Dict(
         :muMean => reshape(initialValues[:μ], M, 1),
         :phiMean => reshape(initialValues[:ϕ], M, 1),
         :xiMean => [initialValues[:ξ]],
@@ -117,6 +121,31 @@ function initialize(initialValues::Union{Dict{Symbol, Any}, String})
         :kappaUparams => [(M - 1)/2 + 1, initialValues[:kappaUparam]],
         :kappaVparams => [(M - 1)/2 + 1, initialValues[:kappaVparam]],
     )
+    compApproxMarginals!(approxMarginals, traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
+    saveApproxMarginals!(approxMarginals, saveFolder);
+    compMCKL!(MCKL, approxMarginals, spatialScheme=spatialScheme);
+    saveMCKL!(MCKL, saveFolder);
+
+    return traces, approxMarginals, MCKL
+    
+end
+
+
+"""
+    initialize(initialValues)
+
+Load previous traces to use as initialize values.
+
+# Arguments
+- `initialValues::string`: Folder name where the traces are stored.
+    The traces file must have the name 'traces.dat'.
+"""
+function initialize(initialValues::String)
+    
+    res = loadRes(initialValues);
+    iter = length(res.traces[:xiMean]); # Include iteration 0.
+    println("Loaded traces from $iter previous itérations.");
+    return res.traces, res.approxMarginals, res.MCKL
 
 end
 
@@ -251,7 +280,7 @@ Perform one iteration of the CAVI algorithm.
 """
 function runIter!(traces::Dict; caviCounter::Dict, spatialScheme::Dict, saveFolder::String)
 
-    caviCounter[:iter] += 1
+    caviCounter[:iter] = length(traces[:xiMean]);
     iter = caviCounter[:iter];
     M = spatialScheme[:M];
 
