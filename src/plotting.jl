@@ -7,14 +7,15 @@ Plot evolution of the KL divergence over CAVI epochs.
 
 # Arguments
 - `MCKL::DenseVector`: Values of the KL divergence for each epoch.
+- `saveFolder::String`: Folder where to save the fig.
 """
-function plotConvergenceCriterion(MCKL::DenseVector)
+function plotConvergenceCriterion(MCKL::DenseVector, saveFolder::String)
     
     set_default_plot_size(15cm ,10cm)
 
     n_mckl = length(MCKL);
 
-    plot(
+    p = plot(
         layer(x=1:n_mckl, y=MCKL, Geom.line),
         layer(x=1:n_mckl, y=MCKL, Geom.point, shape=[Shape.cross], Theme(default_color="red")),
         Theme(background_color="white"),
@@ -22,6 +23,8 @@ function plotConvergenceCriterion(MCKL::DenseVector)
         Guide.xlabel("Epoch"),
         Guide.ylabel("Divergence KL"),
     )
+
+    draw(SVG("$saveFolder/mckl.svg"), p)
 end
 
 
@@ -33,14 +36,15 @@ Plot evolution of the KL divergence over CAVI epochs.
 # Arguments
 - `trace::DenseVector`: Trace of the parameter.
 - `name::String`: Name of the parameter.
+- `saveFolder::String`: Folder where to save the fig.
 """
-function plotTraceCAVI(trace::DenseVector, name::String)
+function plotTraceCAVI(trace::DenseVector, name::String, saveFolder::String)
     
     set_default_plot_size(15cm ,10cm)
 
     n_trace = length(trace);
 
-    plot(
+    p = plot(
         layer(x=1:n_trace, y=trace, Geom.line),
         layer(x=1:n_trace, y=trace, Geom.point, shape=[Shape.cross], Theme(default_color="red")),
         Theme(background_color="white"),
@@ -48,6 +52,8 @@ function plotTraceCAVI(trace::DenseVector, name::String)
         Guide.xlabel("Itération"),
         Guide.ylabel("Valeur"),
     )
+
+    draw(SVG("$saveFolder/$(name)_cavi_trace.svg"), p)
 end
 
 
@@ -59,21 +65,24 @@ Plot evolution of the KL divergence over CAVI epochs.
 # Arguments
 - `chain::Mamba.Chains`: Traces of all parameters.
 - `name::String`: Name of the parameter.
+- `saveFolder::String`: Folder where to save the fig.
 """
-function plotTraceMCMC(chain::Mamba.Chains, name::String)
+function plotTraceMCMC(chain::Mamba.Chains, name::String, saveFolder::String)
     
     set_default_plot_size(15cm ,10cm)
 
     trace = chain[:, name, 1].value;
     n_trace = length(trace);
 
-    plot(
+    p = plot(
         layer(x=1:n_trace, y=trace, Geom.line),
         Theme(background_color="white"),
         Guide.title("Trace MCMC de $name"),
         Guide.xlabel("Itération"),
         Guide.ylabel("Valeur"),
     )
+
+    draw(SVG("$saveFolder/$(name)_mcmc_trace.svg"), p)
 end
 
 
@@ -90,11 +99,12 @@ function plotCAVIvsMCMC(
     caviRes::CAVIres,
     mcmcChain::Mamba.Chains, 
     warmingSize::Integer,
+    saveFolder::String,
 )
 
     set_default_plot_size(20cm, 31cm)
 
-    x = 5:.001:15;
+    x = 0:.0001:.1;
 
     marginal = buildCellCAVImarginal(numCell, 1, caviRes=caviRes);
     mcmcSample = mcmcChain[:, "μ$numCell", 1].value[warmingSize:end];
@@ -108,11 +118,11 @@ function plotCAVIvsMCMC(
         Guide.ylabel("Densité"),
     );
 
-    x = -2:.001:2;
-
+    x = -10:.01:0;
+    
     marginal = buildCellCAVImarginal(numCell, 2, caviRes=caviRes);
     mcmcSample = mcmcChain[:, "ϕ$numCell", 1].value[warmingSize:end];
-
+    
     p2 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
@@ -121,8 +131,8 @@ function plotCAVIvsMCMC(
         Guide.xlabel("phi"),
         Guide.ylabel("Densité"),
     );
-
-    x = .22:.0001:.27;
+        
+    x = 0:.0001:.15;
 
     marginal = caviRes.approxMarginals[M+1];
     mcmcSample = mcmcChain[:, "ξ", 1].value[warmingSize:end];
@@ -136,7 +146,7 @@ function plotCAVIvsMCMC(
         Guide.ylabel("Densité"),
     );
 
-    x = .5:.001:1.5;
+    x = 3*10^4:1:5*10^4;
 
     marginal = caviRes.approxMarginals[M+2];
     mcmcSample = mcmcChain[:, "κᵤ", 1].value[warmingSize:end];
@@ -149,8 +159,8 @@ function plotCAVIvsMCMC(
         Guide.xlabel("kappa_u"),
         Guide.ylabel("Densité"),
     );
-
-    x = 6:.001:14;
+    
+    x = 0:.1:300;
 
     marginal = caviRes.approxMarginals[M+3];
     mcmcSample = mcmcChain[:, "κᵥ", 1].value[warmingSize:end];
@@ -164,7 +174,9 @@ function plotCAVIvsMCMC(
         Guide.ylabel("Densité"),
     );
 
-    vstack(p1, p2, p3, p4, p5)
+    p = vstack(p1, p2, p3, p4, p5)
+
+    draw(SVG("$saveFolder/cavi_vs_mcmc_$numCell.svg"), p)
 end
 
 
