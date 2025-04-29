@@ -9,7 +9,7 @@ Plot evolution of the KL divergence over CAVI epochs.
 - `MCKL::DenseVector`: Values of the KL divergence for each epoch.
 - `saveFolder::String`: Folder where to save the fig.
 """
-function plotConvergenceCriterion(MCKL::DenseVector, saveFolder::String)
+function plotConvergenceCriterion(MCKL::DenseVector; saveFolder::String)
     
     set_default_plot_size(15cm ,10cm)
 
@@ -38,7 +38,7 @@ Plot evolution of the KL divergence over CAVI epochs.
 - `name::String`: Name of the parameter.
 - `saveFolder::String`: Folder where to save the fig.
 """
-function plotTraceCAVI(trace::DenseVector, name::String, saveFolder::String)
+function plotTraceCAVI(trace::DenseVector, name::String; saveFolder::String)
     
     set_default_plot_size(15cm ,10cm)
 
@@ -67,7 +67,7 @@ Plot evolution of the KL divergence over CAVI epochs.
 - `name::String`: Name of the parameter.
 - `saveFolder::String`: Folder where to save the fig.
 """
-function plotTraceMCMC(chain::Mamba.Chains, name::String, saveFolder::String)
+function plotTraceMCMC(chain::Mamba.Chains, name::String; saveFolder::String)
     
     set_default_plot_size(15cm ,10cm)
 

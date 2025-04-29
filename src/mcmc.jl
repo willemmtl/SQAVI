@@ -1,4 +1,4 @@
-using GMRF, ProgressMeter, LinearAlgebra, Mamba
+using GMRF, ProgressMeter, LinearAlgebra, Mamba, Serialization
 using Distributions:loglikelihood
 
 include("model.jl");
@@ -13,9 +13,10 @@ Use Markov asumption to parallelize calculations.
 - `datastructure::Dict`: Data and spatial schemes.
 - `niter::Integer`: Number of iterations.
 - `initialvalues::Dict`: Initial value for each parameter.
-- `stepsize::Dict`: Instrumental variance's step size for each parameter. 
+- `stepsize::Dict`: Instrumental variance's step size for each parameter.
+- `saveFolder::String`: Folder where to save the resulting chain. 
 """
-function mcmc(datastructure::Dict, niter::Integer, initialvalues::Dict, stepsize::Dict)
+function mcmc(datastructure::Dict, niter::Integer, initialvalues::Dict, stepsize::Dict; saveFolder::String)
 
     Y = datastructure[:Y];
     Fmu = datastructure[:Fmu];
@@ -74,8 +75,22 @@ function mcmc(datastructure::Dict, niter::Integer, initialvalues::Dict, stepsize
 
     end
 
-    return createChain(M, μ, ϕ, ξ, κᵤ, κᵥ)
+    chain = createChain(M, μ, ϕ, ξ, κᵤ, κᵥ)
+    saveChain!(chain, saveFolder);
+    return chain
 
+end
+
+
+"""
+    saveChain!(chain, saveFolder)
+
+Save the MCMC chains in the given saveFolder.
+"""
+function saveChain!(chain::Mamba.Chains, saveFolder::String)
+    open("$saveFolder/mcmc_chain.dat", "w") do file
+        serialize(file, chain)
+    end
 end
 
 
