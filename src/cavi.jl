@@ -32,7 +32,7 @@ function runCAVI(
     )
 
     if isa(initialValues, Dict)
-        (traces, approxMarginals, MCKL) = initialize(initialValues, caviCounter, spatialScheme, saveFolder=saveFolder);
+        (traces, approxMarginals, MCKL) = initialize(initialValues, caviCounter, spatialScheme);
     elseif isa(initialValues, String)
         (traces, approxMarginals, MCKL) = initialize(initialValues);
     end
@@ -99,7 +99,6 @@ function initialize(
     initialValues::Dict{Symbol, Any},
     caviCounter::Dict,
     spatialScheme::Dict;
-    saveFolder::String,
 )
 
     println("Itération 0...")
@@ -121,10 +120,9 @@ function initialize(
         :kappaUparams => [(M - 1)/2 + 1, initialValues[:kappaUparam]],
         :kappaVparams => [(M - 1)/2 + 1, initialValues[:kappaVparam]],
     )
+
     compApproxMarginals!(approxMarginals, traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
-    saveApproxMarginals!(approxMarginals, saveFolder);
     compMCKL!(MCKL, approxMarginals, spatialScheme=spatialScheme);
-    saveMCKL!(MCKL, saveFolder);
 
     return traces, approxMarginals, MCKL
     
@@ -170,36 +168,12 @@ function runEpoch!(traces::Dict, MCKL::DenseVector, approxMarginals::Vector{<:Di
 
     for _ = 1:epochSize
         runIter!(traces, caviCounter=caviCounter, spatialScheme=spatialScheme, saveFolder=saveFolder);
+        res = CAVIres(MCKL, approxMarginals, traces);
+        saveRes!(res, saveFolder);
     end
     
     compApproxMarginals!(approxMarginals, traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
-    saveApproxMarginals!(approxMarginals, saveFolder);
     compMCKL!(MCKL, approxMarginals, spatialScheme=spatialScheme);
-    saveMCKL!(MCKL, saveFolder);
-end
-
-
-"""
-    saveApproxMarginals!(approxMarginals, saveFolder)
-
-Save the current approximation marginals at the given saveFolder.
-"""
-function saveApproxMarginals!(approxMarginals::Vector{<:Distribution}, saveFolder::String)
-    open("$saveFolder/approxMarginals.dat", "w") do file
-        serialize(file, approxMarginals)
-    end
-end
-
-
-"""
-    saveMCKL!(MCKL, saveFolder)
-
-Save the current MCKL vector at the given saveFolder.
-"""
-function saveMCKL!(MCKL::DenseVector, saveFolder::String)
-    open("$saveFolder/MCKL.dat", "w") do file
-        serialize(file, MCKL)
-    end
 end
 
 
@@ -294,19 +268,6 @@ function runIter!(traces::Dict; caviCounter::Dict, spatialScheme::Dict, saveFold
 
     updateParams!(traces, caviCounter, spatialScheme);
 
-    saveTraces!(traces, saveFolder);
-end
-
-
-"""
-    saveTraces!(traces, saveFolder)
-
-Save the current traces at the given saveFolder.
-"""
-function saveTraces!(traces::Dict, saveFolder::String)
-    open("$saveFolder/traces.dat", "w") do file
-        serialize(file, traces)
-    end
 end
 
 
