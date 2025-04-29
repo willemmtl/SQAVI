@@ -108,7 +108,7 @@ include("../src//mcmc.jl");
         );
 
         chain = @suppress begin
-            mcmc(datastructure, niter, initialvalues, stepsize);
+            mcmc(datastructure, niter, initialvalues, stepsize, saveFolder="tests/results");
         end
 
         @test length(chain.names) == 2 * M + 3;
