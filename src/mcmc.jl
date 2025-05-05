@@ -95,6 +95,19 @@ end
 
 
 """
+    loadChain(folderName)
+
+Load a CAVI result previously saved in the given folderName.
+The file must have the name 'cavires.dat' which is automatically given by saveRes!(res, saveFolder) function.
+"""
+function loadChain(folderName::String)
+    return open("$folderName/mcmc_chain.dat", "r") do file
+        deserialize(file)
+    end
+end
+
+
+"""
     xi_update(ξ, ξ̃, μ, ϕ, Y)
 
 Choose whether to accept xi's candidate or not based on the Metropolis criterion.
