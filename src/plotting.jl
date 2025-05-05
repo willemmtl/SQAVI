@@ -104,7 +104,8 @@ function plotCAVIvsMCMC(
 
     set_default_plot_size(20cm, 31cm)
 
-    x = 0:.0001:.1;
+    # x = 0:.0001:.1;
+    x = 35:.001:45;
 
     marginal = buildCellCAVImarginal(numCell, 1, caviRes=caviRes);
     mcmcSample = mcmcChain[:, "μ$numCell", 1].value[warmingSize:end];
@@ -112,13 +113,15 @@ function plotCAVIvsMCMC(
     p1 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
+        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
         Theme(background_color="white"),
-        Guide.title("CAVI vs MCMC pour mu"),
+        Guide.title("SQAVI vs MCMC pour μ$numCell"),
         Guide.xlabel("mu"),
         Guide.ylabel("Densité"),
     );
 
-    x = -10:.01:0;
+    # x = -10:.01:0;
+    x = 0:.01:2;
     
     marginal = buildCellCAVImarginal(numCell, 2, caviRes=caviRes);
     mcmcSample = mcmcChain[:, "ϕ$numCell", 1].value[warmingSize:end];
@@ -126,13 +129,15 @@ function plotCAVIvsMCMC(
     p2 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
+        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
         Theme(background_color="white"),
-        Guide.title("CAVI vs MCMC pour phi"),
+        Guide.title("SQAVI vs MCMC pour ϕ$numCell"),
         Guide.xlabel("phi"),
         Guide.ylabel("Densité"),
     );
         
-    x = 0:.0001:.15;
+    # x = 0:.0001:.15;
+    x = 0.04:.0001:.06;
 
     marginal = caviRes.approxMarginals[M+1];
     mcmcSample = mcmcChain[:, "ξ", 1].value[warmingSize:end];
@@ -140,13 +145,15 @@ function plotCAVIvsMCMC(
     p3 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
+        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
         Theme(background_color="white"),
-        Guide.title("CAVI vs MCMC pour xi"),
+        Guide.title("SQAVI vs MCMC pour xi"),
         Guide.xlabel("xi"),
         Guide.ylabel("Densité"),
     );
 
-    x = 3*10^4:1:5*10^4;
+    # x = 3*10^4:1:5*10^4;
+    x = 0.7:.001:1.3;
 
     marginal = caviRes.approxMarginals[M+2];
     mcmcSample = mcmcChain[:, "κᵤ", 1].value[warmingSize:end];
@@ -154,13 +161,15 @@ function plotCAVIvsMCMC(
     p4 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
+        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
         Theme(background_color="white"),
-        Guide.title("CAVI vs MCMC pour kappa_u"),
+        Guide.title("SQAVI vs MCMC pour kappa_u"),
         Guide.xlabel("kappa_u"),
         Guide.ylabel("Densité"),
     );
     
-    x = 0:.1:300;
+    # x = 0:.1:300;
+    x = 8:.01:12;
 
     marginal = caviRes.approxMarginals[M+3];
     mcmcSample = mcmcChain[:, "κᵥ", 1].value[warmingSize:end];
@@ -168,8 +177,9 @@ function plotCAVIvsMCMC(
     p5 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
         layer(x=mcmcSample, Geom.histogram(density=true)),
+        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
         Theme(background_color="white"),
-        Guide.title("CAVI vs MCMC pour kappa_v"),
+        Guide.title("SQAVI vs MCMC pour kappa_v"),
         Guide.xlabel("kappa_v"),
         Guide.ylabel("Densité"),
     );

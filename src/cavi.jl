@@ -20,7 +20,7 @@ function runCAVI(
     nEpochMax::Integer,
     epochSize::Integer,
     spatialScheme::Dict{Symbol, Any},
-    ϵ::Real=0.05;
+    ϵ::Real=0.001;
     initialValues::Union{Dict{Symbol, Any}, String},
     saveFolder::String,
 )
@@ -39,9 +39,7 @@ function runCAVI(
 
     while (caviCounter[:epoch] < nEpochMax)
         runEpoch!(traces, MCKL, approxMarginals, caviCounter=caviCounter, epochSize=epochSize, spatialScheme=spatialScheme, saveFolder=saveFolder);
-        println(caviCounter[:epoch])
-        println(abs(MCKL[caviCounter[:epoch]+1] - MCKL[caviCounter[:epoch]]))
-        if (abs(MCKL[caviCounter[:epoch]+1] - MCKL[caviCounter[:epoch]]) < ϵ)
+        if (abs(MCKL[caviCounter[:epoch]+1] - MCKL[caviCounter[:epoch]]) / M < ϵ)
             println("L'algorithme a convergé !")
             res = CAVIres(MCKL, approxMarginals, traces);
             saveRes!(res, saveFolder);
