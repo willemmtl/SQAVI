@@ -39,13 +39,13 @@ function runCAVI(
 
     while (caviCounter[:epoch] < nEpochMax)
         runEpoch!(traces, MCKL, approxMarginals, caviCounter=caviCounter, epochSize=epochSize, spatialScheme=spatialScheme, saveFolder=saveFolder);
-        if (caviCounter[:epoch] >= 2)
-            if (abs(MCKL[caviCounter[:epoch]] - MCKL[caviCounter[:epoch]-1]) < ϵ)
-                println("L'algorithme a convergé !")
-                res = CAVIres(MCKL, approxMarginals, traces);
-                saveRes!(res, saveFolder);
-                return res
-            end
+        println(caviCounter[:epoch])
+        println(abs(MCKL[caviCounter[:epoch]+1] - MCKL[caviCounter[:epoch]]))
+        if (abs(MCKL[caviCounter[:epoch]+1] - MCKL[caviCounter[:epoch]]) < ϵ)
+            println("L'algorithme a convergé !")
+            res = CAVIres(MCKL, approxMarginals, traces);
+            saveRes!(res, saveFolder);
+            return res
         end
     end
 
