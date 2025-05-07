@@ -1,4 +1,4 @@
-using Serialization
+using Serialization, Extremes, StructArrays, Suppressor
 
 include("utils.jl");
 include("model.jl");
@@ -21,7 +21,7 @@ function runCAVI(
     epochSize::Integer,
     spatialScheme::Dict{Symbol, Any},
     ϵ::Real=0.001;
-    initialValues::Union{Dict{Symbol, Any}, String},
+    initialValues::Union{Dict{Symbol, Any}, String, Nothing}=nothing,
     saveFolder::String,
 )
     
@@ -35,6 +35,8 @@ function runCAVI(
         (traces, approxMarginals, MCKL) = initialize(initialValues, caviCounter, spatialScheme);
     elseif isa(initialValues, String)
         (traces, approxMarginals, MCKL) = initialize(initialValues);
+    elseif isnothing(initialValues)
+        (traces, approxMarginals, MCKL) = initialize(caviCounter, spatialScheme);
     end
 
     while (caviCounter[:epoch] < nEpochMax)
@@ -91,12 +93,11 @@ Compute approxMarginals and MCKL with initialize values.
 - `initialValues::Dict{Symbol, Any}`: Initial values to assign.
 - `caviCounter::Dict`: Counters of the CAVI algorithm.
 - `spatialScheme::Dict`: Spatial structures and data.
-- `saveFolder::String` : Folder where to save current results.
 """
 function initialize(
     initialValues::Dict{Symbol, Any},
     caviCounter::Dict,
-    spatialScheme::Dict;
+    spatialScheme::Dict
 )
 
     println("Itération 0...")
@@ -142,6 +143,52 @@ function initialize(initialValues::String)
     iter = length(res.traces[:xiMean]); # Include iteration 0.
     println("Loaded traces from $iter previous itérations.");
     return res.traces, res.approxMarginals, res.MCKL
+
+end
+
+
+"""
+    initialize(caviCounter, spatialScheme)
+
+Initialize values with MLE of GEV params.
+
+# Arguments
+- `caviCounter::Dict`: Counters of the CAVI algorithm.
+- `spatialScheme::Dict`: Spatial structures and data.
+"""
+function initialize(caviCounter::Dict, spatialScheme::Dict)
+    
+    println("Itération 0...")
+    
+    M = spatialScheme[:M];
+    data = spatialScheme[:data];
+
+    approxMarginals = Vector{Distribution}(undef, M+3);
+    MCKL = Vector{Float64}();
+
+    # Identity Matrices
+    cellVar = zeros(4, M);
+    cellVar[1, :] = ones(M);
+    cellVar[4, :] = ones(M);
+
+    fittedgev = @suppress begin
+        StructArray(gevfit.(data));
+    end
+    MLEs = hcat(fittedgev.θ̂...);
+
+    traces = Dict(
+        :muMean => reshape(MLEs[1, :], M, 1),
+        :phiMean => reshape(MLEs[2, :], M, 1),
+        :xiMean => [mean(MLEs[3, :])],
+        :cellVar => cellVar,
+        :kappaUparams => [(M - 1)/2 + 1, (M - 1)/2 + 1],
+        :kappaVparams => [(M - 1)/2 + 1, (M - 1)/2 + 1],
+    )
+
+    compApproxMarginals!(approxMarginals, traces, caviCounter=caviCounter, spatialScheme=spatialScheme);
+    compMCKL!(MCKL, approxMarginals, spatialScheme=spatialScheme);
+
+    return traces, approxMarginals, MCKL
 
 end
 

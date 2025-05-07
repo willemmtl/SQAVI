@@ -1,8 +1,34 @@
+using Extremes
+
 struct Ressource
     traces::Dict
     caviCounter::Dict
     spatialScheme::Dict
 end
+
+
+"""
+initialize(caviCounter, spatialScheme)
+"""
+M = 4;
+μ = 40.0;
+ϕ = 2.0;
+ξ = 0.05;
+
+initializeRessource = Ressource(
+    Dict(),
+    Dict(
+        :iter => 0,
+        :epoch => 0,
+        :numCell => 1,
+    ),
+    Dict(
+        :M => M,
+        :Fmu => iGMRF(2, 2, 1, 10.0),
+        :Fphi => iGMRF(2, 2, 1, 100.0),
+        :data => [rand(GeneralizedExtremeValue(μ, exp(ϕ), ξ), 1000) for _ = 1:M]
+    ),    
+)
 
 
 """

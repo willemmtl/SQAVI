@@ -5,6 +5,22 @@ include("ressources/cavi.jl");
 
 @testset "cavi.jl" begin
 
+
+    @testset "initialize(caviCounter, spatialScheme)" begin
+        
+        caviCounter = initializeRessource.caviCounter;
+        spatialScheme = initializeRessource.spatialScheme;
+        (traces, approxMarginals, MCKL) = @suppress begin 
+            initialize(caviCounter, spatialScheme);
+        end
+
+        @test (mean(traces[:muMean][1, :]) - 40.0) < 0.1;
+        @test (mean(traces[:phiMean][1, :]) - 2.0) < 0.1;
+        @test (traces[:xiMean][1] - 0.05) < 0.1;
+
+    end
+
+
     @testset "buildVar(components)" begin
 
         components = [1, 2, 3, 4];
