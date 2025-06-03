@@ -37,18 +37,18 @@ Will be used to compute KL divergence.
 """
 function generateApproxSample(approxMarginals::Vector{<:Distribution}, N::Integer)
     
-    M = length(approxMarginals) - 3;
-    cellSupp = zeros(2, N, M);
+    m = length(approxMarginals) - 3;
+    cellSupp = zeros(2, N, m);
     xiSupp = zeros(1, N);
     kappaUsupp = zeros(1, N);
     kappaVsupp = zeros(1, N);
 
-    for k = 1:M
+    for k = 1:m
         cellSupp[:, :, k] = rand(approxMarginals[k], N);
     end
-    xiSupp[1, :] = rand(approxMarginals[M+1], N);
-    kappaUsupp[1, :] = rand(approxMarginals[M+2], N);
-    kappaVsupp[1, :] = rand(approxMarginals[M+3], N);
+    xiSupp[1, :] = rand(approxMarginals[m+1], N);
+    kappaUsupp[1, :] = rand(approxMarginals[m+2], N);
+    kappaVsupp[1, :] = rand(approxMarginals[m+3], N);
     
     return vcat(tensToMat(cellSupp), xiSupp, kappaUsupp, kappaVsupp);
 end
