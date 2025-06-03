@@ -1,7 +1,12 @@
-using Gadfly, Cairo, Fontconfig, Distributions, Mamba
+using Gadfly, Cairo, Fontconfig, Distributions, Mamba, Measures
+
+
+TICK_FONT_SIZE = 16pt;
+SUBTICK_FONT_SIZE = 14pt;
+LEGEND_FONT_SIZE = 16pt;
 
 """
-    plotConvergenceCriterion(MCKL)
+    plotConvergenceCriterion(MCKL; saveFolder)
 
 Plot evolution of the KL divergence over CAVI epochs.
 
@@ -13,23 +18,27 @@ function plotConvergenceCriterion(MCKL::DenseVector; saveFolder::String)
     
     set_default_plot_size(15cm ,10cm)
 
-    n_mckl = length(MCKL);
+    n_mckl = length(MCKL)-1;
 
     p = plot(
-        layer(x=1:n_mckl, y=MCKL, Geom.line),
-        layer(x=1:n_mckl, y=MCKL, Geom.point, shape=[Shape.cross], Theme(default_color="red")),
-        Theme(background_color="white"),
-        Guide.title("Critère de convergence"),
-        Guide.xlabel("Epoch"),
+        layer(x=1:n_mckl, y=MCKL[2:end], Geom.line),
+        layer(x=1:n_mckl, y=MCKL[2:end], Geom.point, shape=[Shape.cross], Theme(default_color="red")),
+        Guide.Theme(
+            background_color="white",
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+        ),
+        # Guide.title("Critère de convergence"),
+        Guide.xlabel("Époque"),
         Guide.ylabel("Divergence KL"),
     )
 
-    draw(SVG("$saveFolder/mckl.svg"), p)
+    draw(SVG("$saveFolder/plots/mckl.svg"), p)
 end
 
 
 """
-    plotTraceCAVI(trace, name)
+    plotTraceSQAVI(trace, name; saveFolder)
 
 Plot evolution of the KL divergence over CAVI epochs.
 
@@ -38,27 +47,31 @@ Plot evolution of the KL divergence over CAVI epochs.
 - `name::String`: Name of the parameter.
 - `saveFolder::String`: Folder where to save the fig.
 """
-function plotTraceCAVI(trace::DenseVector, name::String; saveFolder::String)
+function plotTraceSQAVI(trace::DenseVector, name::String; saveFolder::String)
     
     set_default_plot_size(15cm ,10cm)
 
     n_trace = length(trace);
 
     p = plot(
-        layer(x=1:n_trace, y=trace, Geom.line),
-        layer(x=1:n_trace, y=trace, Geom.point, shape=[Shape.cross], Theme(default_color="red")),
-        Theme(background_color="white"),
-        Guide.title("Trace CAVI de $name"),
+        layer(x=0:n_trace-1, y=trace, Geom.line),
+        layer(x=0:n_trace-1, y=trace, Geom.point, shape=[Shape.cross], Theme(default_color="red")),
+        Guide.Theme(
+            background_color="white",
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+        ),
+        # Guide.title("Trace CAVI de $name"),
         Guide.xlabel("Itération"),
-        Guide.ylabel("Valeur"),
+        Guide.ylabel("$name"),
     )
 
-    draw(SVG("$saveFolder/$(name)_cavi_trace.svg"), p)
+    draw(SVG("$saveFolder/plots/$(name)_cavi_trace.svg"), p)
 end
 
 
 """
-    plotTraceMCMC(chain, name)
+    plotTraceMCMC(chain, name; saveFolder)
 
 Plot evolution of the KL divergence over CAVI epochs.
 
@@ -76,13 +89,39 @@ function plotTraceMCMC(chain::Mamba.Chains, name::String; saveFolder::String)
 
     p = plot(
         layer(x=1:n_trace, y=trace, Geom.line),
-        Theme(background_color="white"),
-        Guide.title("Trace MCMC de $name"),
+        Guide.Theme(
+            background_color="white",
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+        ),
+        # Guide.title("Trace MCMC de $name"),
         Guide.xlabel("Itération"),
         Guide.ylabel("Valeur"),
     )
 
-    draw(SVG("$saveFolder/$(name)_mcmc_trace.svg"), p)
+    draw(SVG("$saveFolder/plots/$(name)_mcmc_trace.svg"), p)
+end
+
+
+function plotHistMCMC(chain::Mamba.Chains, name::String; warmingSize::Int, saveFolder::String)
+
+    set_default_plot_size(15cm ,10cm)
+    
+    sample = chain[warmingSize:end, name, 1].value;
+    
+    p = plot(
+        x=sample, Geom.histogram(density=true),
+        Guide.Theme(
+            background_color="white",
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+        ),
+        Guide.xlabel("$name"),
+        Guide.ylabel("Densité"),
+    )
+
+    draw(SVG("$saveFolder/plots/$(name)_mcmc_density.svg"), p)
+
 end
 
 
@@ -102,91 +141,124 @@ function plotCAVIvsMCMC(
     saveFolder::String,
 )
 
-    set_default_plot_size(20cm, 31cm)
+    M = size(caviRes.traces[:muMean], 1);
+    mcmcIter = size(chain, 1);
+    binCount = round(Int, sqrt(mcmcIter));
 
-    # x = 0:.0001:.1;
-    x = 35:.001:45;
+    set_default_plot_size(20cm, 40cm);
+
+    x = 35:.001:55;
 
     marginal = buildCellCAVImarginal(numCell, 1, caviRes=caviRes);
     mcmcSample = mcmcChain[:, "μ$numCell", 1].value[warmingSize:end];
 
     p1 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
-        layer(x=mcmcSample, Geom.histogram(density=true)),
-        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
-        Theme(background_color="white"),
-        Guide.title("SQAVI vs MCMC pour μ$numCell"),
-        Guide.xlabel("mu"),
+        layer(x=mcmcSample, Geom.histogram(density=true, bincount=binCount)),
+        Guide.Theme(
+            background_color="white",
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+            key_label_font_size=LEGEND_FONT_SIZE,
+        ),
+        # Guide.title("SQAVI vs MCMC pour μ$numCell"),
+        Guide.xlabel("μ$numCell"),
         Guide.ylabel("Densité"),
     );
 
-    # x = -10:.01:0;
-    x = 0:.01:2;
+    x = 1.5:.0001:3;
     
     marginal = buildCellCAVImarginal(numCell, 2, caviRes=caviRes);
     mcmcSample = mcmcChain[:, "ϕ$numCell", 1].value[warmingSize:end];
     
     p2 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
-        layer(x=mcmcSample, Geom.histogram(density=true)),
-        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
-        Theme(background_color="white"),
-        Guide.title("SQAVI vs MCMC pour ϕ$numCell"),
-        Guide.xlabel("phi"),
+        layer(x=mcmcSample, Geom.histogram(density=true, bincount=binCount)),
+        Guide.Theme(
+            background_color="white",
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+            key_label_font_size=LEGEND_FONT_SIZE,
+        ),
+        # Guide.title("SQAVI vs MCMC pour ϕ$numCell"),
+        Guide.xlabel("ϕ$numCell"),
         Guide.ylabel("Densité"),
     );
         
     # x = 0:.0001:.15;
-    x = 0.04:.0001:.06;
+    x = .05:.00001:.07;
 
     marginal = caviRes.approxMarginals[M+1];
     mcmcSample = mcmcChain[:, "ξ", 1].value[warmingSize:end];
 
     p3 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
-        layer(x=mcmcSample, Geom.histogram(density=true)),
-        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
-        Theme(background_color="white"),
-        Guide.title("SQAVI vs MCMC pour xi"),
-        Guide.xlabel("xi"),
+        layer(x=mcmcSample, Geom.histogram(density=true, bincount=binCount)),
+        Guide.Theme(
+            background_color="white",
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+            key_label_font_size=LEGEND_FONT_SIZE,
+        ),
+        # Guide.title("SQAVI vs MCMC pour xi"),
+        Guide.xlabel("ξ"),
         Guide.ylabel("Densité"),
     );
 
     # x = 3*10^4:1:5*10^4;
-    x = 0.7:.001:1.3;
+    x = .01:.00001:.02;
 
     marginal = caviRes.approxMarginals[M+2];
     mcmcSample = mcmcChain[:, "κᵤ", 1].value[warmingSize:end];
 
     p4 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
-        layer(x=mcmcSample, Geom.histogram(density=true)),
-        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
-        Theme(background_color="white"),
-        Guide.title("SQAVI vs MCMC pour kappa_u"),
-        Guide.xlabel("kappa_u"),
+        layer(x=mcmcSample, Geom.histogram(density=true, bincount=binCount)),
+        Guide.Theme(
+            background_color="white",
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+            key_label_font_size=LEGEND_FONT_SIZE,
+        ),
+        # Guide.title("SQAVI vs MCMC pour kappa_u"),
+        Guide.xlabel("κᵤ"),
         Guide.ylabel("Densité"),
     );
     
     # x = 0:.1:300;
-    x = 8:.01:12;
+    x = 15:.001:23;
 
     marginal = caviRes.approxMarginals[M+3];
     mcmcSample = mcmcChain[:, "κᵥ", 1].value[warmingSize:end];
 
     p5 = plot(
         layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
-        layer(x=mcmcSample, Geom.histogram(density=true)),
-        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
-        Theme(background_color="white"),
-        Guide.title("SQAVI vs MCMC pour kappa_v"),
-        Guide.xlabel("kappa_v"),
+        layer(x=mcmcSample, Geom.histogram(density=true, bincount=binCount)),
+        Guide.Theme(
+            background_color="white",
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+            key_label_font_size=LEGEND_FONT_SIZE,
+        ),
+        # Guide.title("SQAVI vs MCMC pour kappa_v"),
+        Guide.xlabel("κᵥ"),
         Guide.ylabel("Densité"),
     );
 
-    p = vstack(p1, p2, p3, p4, p5)
+    # Create a legend plot
+    legend_plot = plot(
+        Guide.manual_color_key("", ["MCMC", "Approximation"], ["#56bcf9", "red"]),
+        Guide.Theme(
+            background_color="white",
+            key_label_font_size=LEGEND_FONT_SIZE,
+            key_position = :bottom,
+        ),
+        Coord.Cartesian(xmin=-0.5, xmax=0.5, ymin=-0.01, ymax=0.01),
+    )
 
-    draw(SVG("$saveFolder/cavi_vs_mcmc_$numCell.svg"), p)
+    p = vstack(legend_plot, p1, p2, p3, p4, p5)
+
+    draw(SVG("$saveFolder/plots/sqavi_vs_mcmc_$numCell.svg"), p)
 end
 
 
@@ -205,109 +277,3 @@ function buildCellCAVImarginal(numCell::Integer, paramNum::Integer; caviRes::CAV
     )
 end
 
-
-# SAME WITHOUT DRAWING
-
-
-"""
-    plotCAVIvsMCMC(numCell; caviRes, mcmcChain, warmingSize)
-
-Plot approx marginals and histogram of MCMC samples for each parameter.
-
-# Arguments
-TBD
-"""
-function plotCAVIvsMCMC(
-    numCell::Integer;
-    caviRes::CAVIres,
-    mcmcChain::Mamba.Chains, 
-    warmingSize::Integer,
-)
-
-    M = size(caviRes.traces[:muMean], 1)
-
-    set_default_plot_size(20cm, 31cm)
-
-    # x = 0:.0001:.1;
-    x = 35:.001:45;
-
-    marginal = buildCellCAVImarginal(numCell, 1, caviRes=caviRes);
-    mcmcSample = mcmcChain[:, "μ$numCell", 1].value[warmingSize:end];
-
-    p1 = plot(
-        layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
-        layer(x=mcmcSample, Geom.histogram(density=true)),
-        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
-        Theme(background_color="white"),
-        Guide.title("SQAVI vs MCMC pour μ$numCell"),
-        Guide.xlabel("mu"),
-        Guide.ylabel("Densité"),
-    );
-
-    # x = -10:.01:0;
-    x = 0:.01:2;
-    
-    marginal = buildCellCAVImarginal(numCell, 2, caviRes=caviRes);
-    mcmcSample = mcmcChain[:, "ϕ$numCell", 1].value[warmingSize:end];
-    
-    p2 = plot(
-        layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
-        layer(x=mcmcSample, Geom.histogram(density=true)),
-        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
-        Theme(background_color="white"),
-        Guide.title("SQAVI vs MCMC pour ϕ$numCell"),
-        Guide.xlabel("phi"),
-        Guide.ylabel("Densité"),
-    );
-        
-    # x = 0:.0001:.15;
-    x = 0.04:.0001:.06;
-
-    marginal = caviRes.approxMarginals[M+1];
-    mcmcSample = mcmcChain[:, "ξ", 1].value[warmingSize:end];
-
-    p3 = plot(
-        layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
-        layer(x=mcmcSample, Geom.histogram(density=true)),
-        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
-        Theme(background_color="white"),
-        Guide.title("SQAVI vs MCMC pour xi"),
-        Guide.xlabel("xi"),
-        Guide.ylabel("Densité"),
-    );
-
-    # x = 3*10^4:1:5*10^4;
-    x = 0.7:.001:1.3;
-
-    marginal = caviRes.approxMarginals[M+2];
-    mcmcSample = mcmcChain[:, "κᵤ", 1].value[warmingSize:end];
-
-    p4 = plot(
-        layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
-        layer(x=mcmcSample, Geom.histogram(density=true)),
-        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
-        Theme(background_color="white"),
-        Guide.title("SQAVI vs MCMC pour kappa_u"),
-        Guide.xlabel("kappa_u"),
-        Guide.ylabel("Densité"),
-    );
-    
-    # x = 0:.1:300;
-    x = 8:.01:12;
-
-    marginal = caviRes.approxMarginals[M+3];
-    mcmcSample = mcmcChain[:, "κᵥ", 1].value[warmingSize:end];
-
-    p5 = plot(
-        layer(x=x, y=pdf.(marginal, x), Geom.line, Theme(default_color="red")),
-        layer(x=mcmcSample, Geom.histogram(density=true)),
-        Guide.manual_color_key("", ["MCMC", "Approximation"], ["deepskyblue", "red"]),
-        Theme(background_color="white"),
-        Guide.title("SQAVI vs MCMC pour kappa_v"),
-        Guide.xlabel("kappa_v"),
-        Guide.ylabel("Densité"),
-    );
-
-    vstack(p1, p2, p3, p4, p5)
-
-end
