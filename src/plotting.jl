@@ -66,7 +66,7 @@ function plotTraceSQAVI(trace::DenseVector, name::String; saveFolder::String)
         Guide.ylabel("$name"),
     )
 
-    draw(SVG("$saveFolder/plots/$(name)_cavi_trace.svg"), p)
+    draw(SVG("$saveFolder/plots/$(name)_sqavi_trace.svg"), p)
 end
 
 
