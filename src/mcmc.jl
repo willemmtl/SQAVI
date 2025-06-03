@@ -1,4 +1,4 @@
-using GMRF, ProgressMeter, LinearAlgebra, Mamba, Serialization
+using GMRF, ProgressMeter, LinearAlgebra, Mamba, Serialization, Extremes, StructArrays, Suppressor
 using Distributions:loglikelihood
 
 include("model.jl");
@@ -32,9 +32,14 @@ function mcmc(datastructure::Dict, niter::Integer, initialvalues::Dict, stepsize
 
     # Initialisation
     
-    μ[:, 1] = initialvalues[:μ];
-    ϕ[:, 1] = initialvalues[:ϕ];
-    ξ[1] = initialvalues[:ξ];
+    fittedgev = @suppress begin
+        StructArray(gevfit.(Y));
+    end
+    MLEs = hcat(fittedgev.θ̂...);
+
+    μ[:, 1] = MLEs[1, :];
+    ϕ[:, 1] = MLEs[2, :];
+    ξ[1] = mean(MLEs[3, :]);
     κᵤ[1] = initialvalues[:κᵤ];
     κᵥ[1] = initialvalues[:κᵥ];
 
