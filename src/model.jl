@@ -6,12 +6,12 @@ using Distributions:loglikelihood
 """
 function logposterior(θ::DenseVector; Fmu::iGMRF, Fphi::iGMRF, data::Vector{Vector{T}}) where T<:AbstractFloat
     
-    M = prod(Fmu.G.gridSize);
-    μ = θ[1:M];
-    ϕ = θ[M+1:2*M];
-    ξ = θ[2*M+1];
-    κᵤ = θ[2*M+2];
-    κᵥ = θ[2*M+3];
+    m = prod(Fmu.G.gridSize);
+    μ = θ[1:m];
+    ϕ = θ[m+1:2*m];
+    ξ = θ[2*m+1];
+    κᵤ = θ[2*m+2];
+    κᵥ = θ[2*m+3];
 
     return (
         sum(loglikelihood.(GeneralizedExtremeValue.(μ, exp.(ϕ), ξ), data))
@@ -115,21 +115,21 @@ It is the sum of each log density of a cell.
 """
 function logapprox(θ::DenseVector, approxMarginals::Vector{<:Distribution})
 
-    M = length(approxMarginals) - 3;
-    μ = θ[1:M];
-    ϕ = θ[M+1:2*M];
-    ξ = θ[2*M+1];
-    κᵤ = θ[2*M+2];
-    κᵥ = θ[2*M+3];
+    m = length(approxMarginals) - 3;
+    μ = θ[1:m];
+    ϕ = θ[m+1:2*m];
+    ξ = θ[2*m+1];
+    κᵤ = θ[2*m+2];
+    κᵥ = θ[2*m+3];
 
     return (
         sum([
             logpdf(approxMarginals[i], [μ[i], ϕ[i]])
-            for i=1:M
+            for i=1:m
         ]) 
-        + logpdf(approxMarginals[M+1], ξ)
-        + logpdf(approxMarginals[M+2], κᵤ)
-        + logpdf(approxMarginals[M+3], κᵥ)
+        + logpdf(approxMarginals[m+1], ξ)
+        + logpdf(approxMarginals[m+2], κᵤ)
+        + logpdf(approxMarginals[m+3], κᵥ)
     );
 end
 
