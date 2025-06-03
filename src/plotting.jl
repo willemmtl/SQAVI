@@ -126,22 +126,22 @@ end
 
 
 """
-    plotCAVIvsMCMC(numCell; caviRes, mcmcChain, warmingSize, saveFolder)
+    plotSQAVIvsMCMC(numCell; caviRes, mcmcChain, warmingSize, saveFolder)
 
 Plot approx marginals and histogram of MCMC samples for each parameter.
 
 # Arguments
 TBD
 """
-function plotCAVIvsMCMC(
+function plotSQAVIvsMCMC(
     numCell::Integer;
-    caviRes::CAVIres,
+    sqaviRes::SQAVIres,
     mcmcChain::Mamba.Chains, 
     warmingSize::Integer,
     saveFolder::String,
 )
 
-    M = size(caviRes.traces[:muMean], 1);
+    M = size(sqaviRes.traces[:muMean], 1);
     mcmcIter = size(chain, 1);
     binCount = round(Int, sqrt(mcmcIter));
 
@@ -149,7 +149,7 @@ function plotCAVIvsMCMC(
 
     x = 35:.001:55;
 
-    marginal = buildCellCAVImarginal(numCell, 1, caviRes=caviRes);
+    marginal = buildCellCAVImarginal(numCell, 1, sqaviRes=sqaviRes);
     mcmcSample = mcmcChain[:, "μ$numCell", 1].value[warmingSize:end];
 
     p1 = plot(
@@ -168,7 +168,7 @@ function plotCAVIvsMCMC(
 
     x = 1.5:.0001:3;
     
-    marginal = buildCellCAVImarginal(numCell, 2, caviRes=caviRes);
+    marginal = buildCellCAVImarginal(numCell, 2, sqaviRes=sqaviRes);
     mcmcSample = mcmcChain[:, "ϕ$numCell", 1].value[warmingSize:end];
     
     p2 = plot(
@@ -188,7 +188,7 @@ function plotCAVIvsMCMC(
     # x = 0:.0001:.15;
     x = .05:.00001:.07;
 
-    marginal = caviRes.approxMarginals[M+1];
+    marginal = sqaviRes.approxMarginals[M+1];
     mcmcSample = mcmcChain[:, "ξ", 1].value[warmingSize:end];
 
     p3 = plot(
@@ -208,7 +208,7 @@ function plotCAVIvsMCMC(
     # x = 3*10^4:1:5*10^4;
     x = .01:.00001:.02;
 
-    marginal = caviRes.approxMarginals[M+2];
+    marginal = sqaviRes.approxMarginals[M+2];
     mcmcSample = mcmcChain[:, "κᵤ", 1].value[warmingSize:end];
 
     p4 = plot(
@@ -228,7 +228,7 @@ function plotCAVIvsMCMC(
     # x = 0:.1:300;
     x = 15:.001:23;
 
-    marginal = caviRes.approxMarginals[M+3];
+    marginal = sqaviRes.approxMarginals[M+3];
     mcmcSample = mcmcChain[:, "κᵥ", 1].value[warmingSize:end];
 
     p5 = plot(
@@ -263,17 +263,17 @@ end
 
 
 """
-    buildCAVImarginal(numCell, paramNum; caviRes)
+    buildCAVImarginal(numCell, paramNum; sqaviRes)
 
 Build the marginal density of a parameter of a given cell from the result of the CAVI algorithm.
 
 # Arguments
 TBD
 """
-function buildCellCAVImarginal(numCell::Integer, paramNum::Integer; caviRes::CAVIres)
+function buildCellCAVImarginal(numCell::Integer, paramNum::Integer; sqaviRes::SQAVIres)
     return Normal(
-        params(caviRes.approxMarginals[numCell])[1][paramNum],
-        sqrt(diag(params(caviRes.approxMarginals[numCell])[2])[paramNum])
+        params(sqaviRes.approxMarginals[numCell])[1][paramNum],
+        sqrt(diag(params(sqaviRes.approxMarginals[numCell])[2])[paramNum])
     )
 end
 
