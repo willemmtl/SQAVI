@@ -4,7 +4,7 @@ using Distributions:loglikelihood
 include("model.jl");
 
 """
-    mcmc(datastructure, niter, initialvalues, stepsize)
+    mcmc(datastructure, niter, stepsize; saveFolder)
 
 Metropolis algorithm.
 Use Markov asumption to parallelize calculations.
@@ -12,11 +12,10 @@ Use Markov asumption to parallelize calculations.
 # Arguments
 - `datastructure::Dict`: Data and spatial schemes.
 - `niter::Integer`: Number of iterations.
-- `initialvalues::Dict`: Initial value for each parameter.
 - `stepsize::Dict`: Instrumental variance's step size for each parameter.
 - `saveFolder::String`: Folder where to save the resulting chain. 
 """
-function mcmc(datastructure::Dict, niter::Integer, initialvalues::Dict, stepsize::Dict; saveFolder::String)
+function mcmc(datastructure::Dict, niter::Integer, stepsize::Dict; saveFolder::String)
 
     Y = datastructure[:Y];
     Fmu = datastructure[:Fmu];
@@ -40,8 +39,8 @@ function mcmc(datastructure::Dict, niter::Integer, initialvalues::Dict, stepsize
     μ[:, 1] = MLEs[1, :];
     ϕ[:, 1] = MLEs[2, :];
     ξ[1] = mean(MLEs[3, :]);
-    κᵤ[1] = initialvalues[:κᵤ];
-    κᵥ[1] = initialvalues[:κᵥ];
+    κᵤ[1] = 1;
+    κᵥ[1] = 1;
 
     Fmu = iGMRF(Fmu.G.gridSize..., Fmu.rankDeficiency, κᵤ[1]);
     Fphi = iGMRF(Fphi.G.gridSize..., Fphi.rankDeficiency, κᵥ[1]);
