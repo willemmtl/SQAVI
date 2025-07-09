@@ -300,8 +300,6 @@ function plotComparisonJointMarginal(
     y = range(η[2] - 3σ_y, stop=η[2] + 3σ_y, length=100);
     z = [pdf(d, [i, j]) for i in x, j in y];
 
-    println(length(z))
-
     # MCMC sample
     μMCMC = mcmcChain[:, "μ$numCell", 1].value[warmingSize:end];
     ϕMCMC = mcmcChain[:, "ϕ$numCell", 1].value[warmingSize:end];
