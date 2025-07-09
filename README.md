@@ -15,6 +15,6 @@ Les résultats mcmc (`mcmc_chain.dat` dans les dossiers `results/200x200` et `re
 - Le dossier `casr` contient les fonctions **spécifiques au jeu de données CaSR**, aussi bien pour le preprocessing que pour afficher les résultats (dossier `casr/src`). Il contient également les **données** pré-traitées (dossier `casr/data/preprocessed`) et certaines données utiles à la visualisation dans l'espace (dossier `casr/data/viz`).
 
 ### Autres détails
-Les fichiers `empty.bin` des dossiers `results/200x200` et `results/casr` peuvent être supprimés. Ils ne sont là que pour pull le repo avec la bonne structure de dossiers.
+Les fichiers `empty.bin` des dossiers `results/200x200`, `results/casr` et `heatmaps` peuvent être supprimés. Ils sont là uniquement pour donner une bonne structure de dossiers.
 
 Par défaut, de nombreux dossiers et fichiers qui pourraient être volumineux sont ignorés par git afin d'éviter des transferts trop volumineux. Il est laissé à la discrétion de l'utilisateur de modifier le fichier `.gitignore` pour chnager cela.
