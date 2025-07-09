@@ -18,3 +18,7 @@ Les résultats mcmc (`mcmc_chain.dat` dans les dossiers `results/200x200` et `re
 Les fichiers `empty.bin` des dossiers `results/200x200`, `results/casr` et `heatmaps` peuvent être supprimés. Ils sont là uniquement pour donner une bonne structure de dossiers.
 
 Par défaut, de nombreux dossiers et fichiers qui pourraient être volumineux sont ignorés par git afin d'éviter des transferts trop volumineux. Il est laissé à la discrétion de l'utilisateur de modifier le fichier `.gitignore` pour chnager cela.
+
+## Données
+
+Les données brutes de CaSR v3.1 ont été extraites via [ce site](https://hpfx.collab.science.gc.ca/~scar700/rcas-casr/download_CaSRv3.1_regions_var_period.html) en sélectionnant une zone rectangulaire recouvrant le Québec. Un dossier compressé contenant les données devrait être dans les main de Jonathan si besoin :).
