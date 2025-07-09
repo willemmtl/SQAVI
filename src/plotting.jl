@@ -1,7 +1,7 @@
-using Gadfly, Cairo, Fontconfig, Distributions, Mamba, Measures
+using Gadfly, Cairo, Fontconfig, Distributions, Mamba, Measures, Compose, Colors
 
 
-TICK_FONT_SIZE = 16pt;
+TICK_FONT_SIZE = 20pt;
 SUBTICK_FONT_SIZE = 14pt;
 LEGEND_FONT_SIZE = 16pt;
 
@@ -162,7 +162,7 @@ function plotSQAVIvsMCMC(
             key_label_font_size=LEGEND_FONT_SIZE,
         ),
         # Guide.title("SQAVI vs MCMC pour μ$numCell"),
-        Guide.xlabel("μ$numCell"),
+        Guide.xlabel("μₘₜₗ"),
         Guide.ylabel("Densité"),
     );
 
@@ -181,7 +181,7 @@ function plotSQAVIvsMCMC(
             key_label_font_size=LEGEND_FONT_SIZE,
         ),
         # Guide.title("SQAVI vs MCMC pour ϕ$numCell"),
-        Guide.xlabel("ϕ$numCell"),
+        Guide.xlabel("ϕₘₜₗ"),
         Guide.ylabel("Densité"),
     );
         
@@ -277,3 +277,74 @@ function buildCellCAVImarginal(numCell::Integer, paramNum::Integer; sqaviRes::SQ
     )
 end
 
+
+function plotComparisonJointMarginal(
+    numCell::Integer;
+    sqaviRes::SQAVIres,
+    mcmcChain::Mamba.Chains, 
+    warmingSize::Integer,
+    saveFolder::String,
+)
+
+    set_default_plot_size(15cm, 15cm);
+
+    d = sqaviRes.approxMarginals[numCell];
+    η = mean(d);
+    Σ = cov(d);
+
+    σ_x = sqrt(Σ[1, 1]);
+    σ_y = sqrt(Σ[2, 2]);
+
+    # Approximation law
+    x = range(η[1] - 3σ_x, stop=η[1] + 3σ_x, length=100);
+    y = range(η[2] - 3σ_y, stop=η[2] + 3σ_y, length=100);
+    z = [pdf(d, [i, j]) for i in x, j in y];
+
+    println(length(z))
+
+    # MCMC sample
+    μMCMC = mcmcChain[:, "μ$numCell", 1].value[warmingSize:end];
+    ϕMCMC = mcmcChain[:, "ϕ$numCell", 1].value[warmingSize:end];
+
+    xmin = minimum([minimum(x), minimum(μMCMC)])
+    xmax = maximum([maximum(x), maximum(μMCMC)])
+    ymin = minimum([minimum(y), minimum(ϕMCMC)])
+    ymax = maximum([maximum(y), maximum(ϕMCMC)])
+
+    # Première couche : les lignes de contours (couleur rouge fixe)
+    contour_plot = plot(
+        layer(x=x, y=y, z=z, color=fill("contour", length(x)), Geom.contour),
+        Scale.color_discrete_manual(colorant"red"),
+        Coord.cartesian(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax),
+        Guide.Theme(
+            background_color="white",
+            key_label_font_size=LEGEND_FONT_SIZE,
+            key_position=:none,
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+        )
+    )
+
+    # Deuxième couche : le hexbin avec sa propre échelle de couleur
+    histogram_plot = plot(
+        layer(x=μMCMC, y=ϕMCMC, Geom.hexbin(xbincount=100, ybincount=100)),
+        Scale.color_continuous(colormap=Scale.lab_gradient("#56bcf9", "darkblue")),
+        Coord.cartesian(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax),
+        Guide.Theme(
+            background_color="white",
+            key_label_font_size=LEGEND_FONT_SIZE,
+            key_position=:none,
+            major_label_font_size=TICK_FONT_SIZE,
+            minor_label_font_size=SUBTICK_FONT_SIZE,
+        )
+    )
+
+    # Superposition avec Compose
+    c1 = Gadfly.render(contour_plot)
+    c2 = Gadfly.render(histogram_plot)
+
+    # Superposer les deux contextes
+    composed = Compose.compose(c1, c2)
+
+    draw(SVG("$saveFolder/plots/joint_comparison_$numCell.svg"), composed);
+end

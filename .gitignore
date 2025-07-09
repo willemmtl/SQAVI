@@ -11,6 +11,8 @@ data_processing
 maps
 ams
 outputGraphs
+images
+plots
 
 # File types
 *.gif
@@ -21,3 +23,7 @@ outputGraphs
 CasR.ipynb
 climex.ipynb
 gev.ipynb
+
+# Files
+example.jl
+correlation.jl
